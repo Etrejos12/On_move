@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import os
 import tkinter as tk
+from tkinter import ttk
 import sys
 
 BASE_DIR = os.getcwd()
@@ -9,10 +10,37 @@ directorio_salida = os.path.join(BASE_DIR, "output")
 directorio_entrada = os.path.join(BASE_DIR, "input")
 rutajson = os.path.join(r"I:\2.Informativo\1.Gestion_Diaria\1. Envios Solicitudes\Trejos", "CONCEPTOS.json")
 
-# Colores
-COLOR_FONDO = "#FDDA24"
-COLOR_BOTONES = "#d5f5e3"
-COLOR_TEXTO = 'black'
+# ---------------------------------------------------------------------------
+# Paleta y tipografía
+# El amarillo organizacional se usa como acento (franja superior y botón
+# principal); el fondo es neutro para que la ventana sea fácil de leer.
+# ---------------------------------------------------------------------------
+# Paleta organizacional
+COLOR_NEGRO = "#000000"
+COLOR_BLANCO = "#FFFFFF"
+COLOR_AMARILLO = "#FDDA24"
+COLOR_VERDE = "#00C389"
+COLOR_MORADO = "#9063CD"
+COLOR_NARANJA = "#FF7F41"
+COLOR_AZUL = "#59CBE8"
+COLOR_ROSADO = "#F5B6CD"
+
+# Usos dentro de la interfaz
+COLOR_FONDO = COLOR_BLANCO
+COLOR_TEXTO = COLOR_NEGRO
+COLOR_EXITO = COLOR_VERDE           # franja de "Proceso finalizado"
+COLOR_ERROR = COLOR_NARANJA         # franja de errores
+COLOR_BORDE_FOCO = COLOR_AZUL       # borde del campo activo
+# Tonos derivados (hover, bordes y texto secundario)
+COLOR_AMARILLO_HOVER = "#F0CC10"
+COLOR_AMARILLO_PRESIONADO = "#E0BC00"
+COLOR_TEXTO_SECUNDARIO = "#555555"
+COLOR_BORDE = "#D0D0D0"
+COLOR_HOVER_SECUNDARIO = "#F2F2F2"
+
+FUENTE = ("Segoe UI", 10)
+FUENTE_NEGRITA = ("Segoe UI", 10, "bold")
+FUENTE_TITULO = ("Segoe UI", 12, "bold")
 
 # Cargar configuraciones desde el archivo JSON
 try:
@@ -51,34 +79,135 @@ def detectar_encabezado_real(path):
             return df
     return None
 
+# ---------------------------------------------------------------------------
+# Estilo visual (solo apariencia)
+# ---------------------------------------------------------------------------
+def configurar_estilos():
+    estilo = ttk.Style(root)
+    estilo.theme_use("clam")
+
+    estilo.configure(".", background=COLOR_FONDO, foreground=COLOR_TEXTO, font=FUENTE)
+    estilo.configure("TFrame", background=COLOR_FONDO)
+    estilo.configure("TLabel", background=COLOR_FONDO, foreground=COLOR_TEXTO, font=FUENTE)
+    estilo.configure("Titulo.TLabel", font=FUENTE_TITULO)
+    estilo.configure("Campo.TLabel", font=FUENTE_NEGRITA, foreground=COLOR_TEXTO_SECUNDARIO)
+    estilo.configure("Mensaje.TLabel", foreground=COLOR_TEXTO_SECUNDARIO)
+
+    # Campo de texto
+    estilo.configure(
+        "TEntry",
+        fieldbackground=COLOR_FONDO, foreground=COLOR_TEXTO,
+        bordercolor=COLOR_BORDE, lightcolor=COLOR_BORDE, darkcolor=COLOR_BORDE,
+        insertcolor=COLOR_TEXTO, padding=(8, 6),
+    )
+    estilo.map(
+        "TEntry",
+        bordercolor=[("focus", COLOR_BORDE_FOCO)],
+        lightcolor=[("focus", COLOR_BORDE_FOCO)],
+    )
+
+    # Lista desplegable
+    estilo.configure(
+        "TCombobox",
+        fieldbackground=COLOR_FONDO, background=COLOR_FONDO, foreground=COLOR_TEXTO,
+        bordercolor=COLOR_BORDE, lightcolor=COLOR_BORDE, darkcolor=COLOR_BORDE,
+        arrowcolor=COLOR_TEXTO_SECUNDARIO, arrowsize=14, padding=(8, 6),
+    )
+    estilo.map(
+        "TCombobox",
+        fieldbackground=[("readonly", COLOR_FONDO)],
+        selectbackground=[("readonly", COLOR_FONDO)],
+        selectforeground=[("readonly", COLOR_TEXTO)],
+        bordercolor=[("focus", COLOR_BORDE_FOCO)],
+        background=[("active", COLOR_HOVER_SECUNDARIO)],
+    )
+    root.option_add("*TCombobox*Listbox.font", FUENTE)
+    root.option_add("*TCombobox*Listbox.background", COLOR_FONDO)
+    root.option_add("*TCombobox*Listbox.selectBackground", COLOR_AMARILLO)
+    root.option_add("*TCombobox*Listbox.selectForeground", COLOR_TEXTO)
+
+    # Botón principal (amarillo organizacional)
+    estilo.configure(
+        "Primario.TButton",
+        background=COLOR_AMARILLO, foreground=COLOR_TEXTO, font=FUENTE_NEGRITA,
+        bordercolor=COLOR_AMARILLO, lightcolor=COLOR_AMARILLO, darkcolor=COLOR_AMARILLO,
+        focuscolor=COLOR_AMARILLO, borderwidth=1, padding=(18, 7),
+    )
+    estilo.map(
+        "Primario.TButton",
+        background=[("pressed", COLOR_AMARILLO_PRESIONADO), ("active", COLOR_AMARILLO_HOVER)],
+        bordercolor=[("pressed", COLOR_AMARILLO_PRESIONADO), ("active", COLOR_AMARILLO_HOVER)],
+    )
+
+    # Botón secundario (neutro)
+    estilo.configure(
+        "Secundario.TButton",
+        background=COLOR_FONDO, foreground=COLOR_TEXTO, font=FUENTE,
+        bordercolor=COLOR_BORDE, lightcolor=COLOR_FONDO, darkcolor=COLOR_FONDO,
+        focuscolor=COLOR_FONDO, borderwidth=1, padding=(18, 7),
+    )
+    estilo.map(
+        "Secundario.TButton",
+        background=[("pressed", COLOR_BORDE), ("active", COLOR_HOVER_SECUNDARIO)],
+    )
+
+
+def crear_ventana_base(titulo, color_acento=COLOR_AMARILLO, ancho_minimo=360):
+    """Ventana con franja de color arriba y cuerpo con márgenes uniformes."""
+    ventana = tk.Toplevel(root)
+    ventana.title(titulo)
+    ventana.configure(bg=COLOR_FONDO)
+    ventana.resizable(False, False)
+    ventana.minsize(ancho_minimo, 1)
+
+    tk.Frame(ventana, bg=color_acento, height=6).pack(fill="x", side="top")
+    cuerpo = ttk.Frame(ventana, padding=(24, 18, 24, 20))
+    cuerpo.pack(fill="both", expand=True)
+    return ventana, cuerpo
+
+
+def centrar_ventana(ventana):
+    """Ajusta la ventana a su contenido y la centra en la pantalla."""
+    ventana.update_idletasks()
+    ancho = max(ventana.winfo_reqwidth(), ventana.winfo_width())
+    alto = max(ventana.winfo_reqheight(), ventana.winfo_height())
+    x = (ventana.winfo_screenwidth() - ancho) // 2
+    y = (ventana.winfo_screenheight() - alto) // 3
+    ventana.geometry(f"+{x}+{y}")
+    ventana.lift()
+    ventana.focus_force()
+
+
+def crear_aviso(titulo, mensaje, color_acento):
+    """Ventana de aviso con título, mensaje y botón Aceptar."""
+    ventana, cuerpo = crear_ventana_base(titulo, color_acento)
+    ttk.Label(cuerpo, text=titulo, style="Titulo.TLabel").pack(anchor="w")
+    ttk.Label(cuerpo, text=mensaje, style="Mensaje.TLabel", wraplength=320, justify="left").pack(anchor="w", pady=(6, 18))
+    boton = ttk.Button(cuerpo, text="Aceptar", style="Primario.TButton", command=ventana.destroy)
+    boton.pack(anchor="e")
+    boton.focus_set()
+    ventana.bind("<Return>", lambda e: ventana.destroy())
+    ventana.bind("<Escape>", lambda e: ventana.destroy())
+    centrar_ventana(ventana)
+    return ventana
+
 # Función para mostrar la ventana de carga
 def mostrar_ventana_cargando():
-    carga = tk.Toplevel(root)
-    carga.title("Cargando")
-    carga.geometry("300x100")
-    carga.configure(bg=COLOR_FONDO)
-    tk.Label(carga, text="Cargando, por favor espere...", padx=20, pady=20, bg=COLOR_FONDO, fg=COLOR_TEXTO).pack()
+    carga, cuerpo = crear_ventana_base("Cargando", ancho_minimo=320)
+    ttk.Label(cuerpo, text="Procesando", style="Titulo.TLabel").pack(anchor="w")
+    ttk.Label(cuerpo, text="Cargando, por favor espere...", style="Mensaje.TLabel").pack(anchor="w", pady=(6, 0))
+    centrar_ventana(carga)
     carga.update()
     return carga
 
 # Función para mostrar un mensaje de error personalizado
 def mostrar_mensaje_error(titulo, mensaje):
-    error_ventana = tk.Toplevel(root)
-    error_ventana.title(titulo)
-    error_ventana.geometry("300x150")
-    error_ventana.configure(bg=COLOR_FONDO)
-    tk.Label(error_ventana, text=mensaje, padx=20, pady=20, bg=COLOR_FONDO, fg=COLOR_TEXTO).pack()
-    tk.Button(error_ventana, text="Aceptar", command=error_ventana.destroy, bg=COLOR_BOTONES, fg=COLOR_FONDO).pack(pady=10)
+    error_ventana = crear_aviso(titulo, mensaje, COLOR_ERROR)
     error_ventana.grab_set()
 
 # Función para mostrar la notificación de finalización
 def mostrar_notificacion_finalizada():
-    notificacion_ventana = tk.Toplevel(root)
-    notificacion_ventana.title("Proceso Finalizado")
-    notificacion_ventana.geometry("300x150")
-    notificacion_ventana.configure(bg=COLOR_FONDO)
-    tk.Label(notificacion_ventana, text="El proceso ha terminado.", padx=20, pady=20, bg=COLOR_FONDO, fg=COLOR_TEXTO).pack()
-    tk.Button(notificacion_ventana, text="Aceptar", command=notificacion_ventana.destroy, bg=COLOR_BOTONES, fg=COLOR_TEXTO).pack(pady=10)
+    notificacion_ventana = crear_aviso("Proceso Finalizado", "El proceso ha terminado.", COLOR_EXITO)
     notificacion_ventana.grab_set()
 
 # Función para ejecutar el proceso
@@ -160,19 +289,23 @@ def procesar_datos(rub, estructura):
 
 # Función para crear el cuadro de diálogo personalizado
 def crear_dialogo_rub():
-    dialogo = tk.Toplevel(root)
-    dialogo.title("Entrada de RUB")
-    dialogo.geometry("600x250")
-    dialogo.configure(bg=COLOR_FONDO)
+    dialogo, cuerpo = crear_ventana_base("Entrada de RUB", ancho_minimo=400)
+    cuerpo.columnconfigure(0, weight=1)
 
-    tk.Label(dialogo, text="Digite el rub del caso:", padx=20, pady=20, bg=COLOR_FONDO, fg=COLOR_TEXTO).pack()
-    entrada_rub = tk.Entry(dialogo)
-    entrada_rub.pack(pady=10)
+    ttk.Label(cuerpo, text="Datos del caso", style="Titulo.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 14))
+
+    ttk.Label(cuerpo, text="Digite el rub del caso", style="Campo.TLabel").grid(row=1, column=0, columnspan=2, sticky="w")
+    entrada_rub = ttk.Entry(cuerpo, font=FUENTE)
+    entrada_rub.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(4, 12))
 
     # Dropdown para seleccionar la estructura
     estructuras = list(CONCEPTOS["estructuras"].keys())
     seleccion_estructura = tk.StringVar(value=estructuras[0])  # Valor por defecto
-    tk.OptionMenu(dialogo, seleccion_estructura, *estructuras).pack(pady=10)
+    ttk.Label(cuerpo, text="Estructura", style="Campo.TLabel").grid(row=3, column=0, columnspan=2, sticky="w")
+    ttk.Combobox(
+        cuerpo, textvariable=seleccion_estructura, values=estructuras,
+        state="readonly", font=FUENTE,
+    ).grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 20))
 
     def aceptar():
         rub = entrada_rub.get()
@@ -184,8 +317,16 @@ def crear_dialogo_rub():
         else:
             mostrar_mensaje_error("Input requerido", "Debe proporcionar un valor para 'rub'.")
 
-    tk.Button(dialogo, text="Aceptar", command=aceptar, bg=COLOR_BOTONES, fg=COLOR_TEXTO, width=12, height=1).pack(pady=10)
-    tk.Button(dialogo, text="Cancelar", command=dialogo.destroy, bg=COLOR_BOTONES, fg=COLOR_TEXTO, width=12, height=1).pack(pady=5)
+    # Botones alineados a la derecha: Cancelar (secundario) y Aceptar (principal)
+    ttk.Button(cuerpo, text="Cancelar", style="Secundario.TButton", command=dialogo.destroy).grid(row=5, column=0, sticky="e", padx=(0, 8))
+    ttk.Button(cuerpo, text="Aceptar", style="Primario.TButton", command=aceptar).grid(row=5, column=1, sticky="e")
+
+    # Atajos de teclado: Enter = Aceptar, Esc = Cancelar
+    dialogo.bind("<Return>", lambda e: aceptar())
+    dialogo.bind("<Escape>", lambda e: dialogo.destroy())
+
+    centrar_ventana(dialogo)
+    entrada_rub.focus_set()
     dialogo.grab_set()
 
 # Crear la ventana principal
@@ -194,6 +335,7 @@ root.title("Principal")
 root.geometry("600x1000")
 root.configure(bg=COLOR_FONDO)
 root.withdraw()  # Ocultar la ventana principal al inicio
+configurar_estilos()
 
 # Llamar a la función para crear el cuadro de diálogo personalizado
 crear_dialogo_rub()
