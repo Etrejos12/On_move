@@ -10,12 +10,7 @@ directorio_salida = os.path.join(BASE_DIR, "output")
 directorio_entrada = os.path.join(BASE_DIR, "input")
 rutajson = os.path.join(r"I:\2.Informativo\1.Gestion_Diaria\1. Envios Solicitudes\Trejos", "CONCEPTOS.json")
 
-# ---------------------------------------------------------------------------
-# Paleta y tipografía
-# El amarillo organizacional se usa como acento (franja superior y botón
-# principal); el fondo es neutro para que la ventana sea fácil de leer.
-# ---------------------------------------------------------------------------
-# Paleta organizacional
+# Paleta banco
 COLOR_NEGRO = "#000000"
 COLOR_BLANCO = "#FFFFFF"
 COLOR_AMARILLO = "#FDDA24"
@@ -31,7 +26,6 @@ COLOR_TEXTO = COLOR_NEGRO
 COLOR_EXITO = COLOR_VERDE           # franja de "Proceso finalizado"
 COLOR_ERROR = COLOR_NARANJA         # franja de errores
 COLOR_BORDE_FOCO = COLOR_AZUL       # borde del campo activo
-# Tonos derivados (hover, bordes y texto secundario)
 COLOR_AMARILLO_HOVER = "#F0CC10"
 COLOR_AMARILLO_PRESIONADO = "#E0BC00"
 COLOR_TEXTO_SECUNDARIO = "#555555"
@@ -79,9 +73,8 @@ def detectar_encabezado_real(path):
             return df
     return None
 
-# ---------------------------------------------------------------------------
-# Estilo visual (solo apariencia)
-# ---------------------------------------------------------------------------
+
+# Estilo visual
 def configurar_estilos():
     estilo = ttk.Style(root)
     estilo.theme_use("clam")
@@ -126,7 +119,7 @@ def configurar_estilos():
     root.option_add("*TCombobox*Listbox.selectBackground", COLOR_AMARILLO)
     root.option_add("*TCombobox*Listbox.selectForeground", COLOR_TEXTO)
 
-    # Botón principal (amarillo organizacional)
+    # Botón principal
     estilo.configure(
         "Primario.TButton",
         background=COLOR_AMARILLO, foreground=COLOR_TEXTO, font=FUENTE_NEGRITA,
