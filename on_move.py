@@ -38,6 +38,17 @@ SUCURSAL_CORRESPONSAL = 917
 CATEGORIA_CONSIGNACIONES = "CONSIGNACIONES SUCURSAL"
 CATEGORIA_CORRESPONSAL = "CORRESPONSAL"
 
+# Datos de sucursal: se buscan en CAJEROS.xlsx (hoja SUCURSALES) por el código de sucursal
+# y se agregan a estas categorías. El archivo está junto a CONCEPTOS.json.
+RUTA_CAJEROS = os.path.join(os.path.dirname(rutajson), "CAJEROS.xlsx")
+HOJA_SUCURSALES = "SUCURSALES"
+CATEGORIAS_CON_SUCURSAL = ["CONSIGNACIONES SUCURSAL", "RETIROS SUCURSAL", "TRANSFERENCIA SUCURSAL"]
+COLUMNAS_SUCURSAL = {
+    "NOMBRE": "NOMBRE_SUCURSAL",
+    "CIUDAD": "CIUDAD_SUCURSAL",
+    "DIRECCION": "DIRECCION_SUCURSAL",
+}
+
 FUENTE = ("Segoe UI", 10)
 FUENTE_NEGRITA = ("Segoe UI", 10, "bold")
 FUENTE_TITULO = ("Segoe UI", 12, "bold")
@@ -78,6 +89,24 @@ def detectar_encabezado_real(path):
             print(f"Encabezado detectado en fila {i}")
             return df
     return None
+
+
+def cargar_sucursales():
+    """Lee la hoja SUCURSALES de CAJEROS.xlsx (CODIGO, NOMBRE, CIUDAD, DIRECCION)."""
+    if not os.path.exists(RUTA_CAJEROS):
+        raise ValueError(f"No se encontró el archivo CAJEROS.xlsx en: {RUTA_CAJEROS}")
+    df = pd.read_excel(RUTA_CAJEROS, sheet_name=HOJA_SUCURSALES, engine="openpyxl")
+    df["_cod"] = pd.to_numeric(df["CODIGO"], errors="coerce")
+    df = df.dropna(subset=["_cod"]).drop_duplicates(subset="_cod")
+    return df[["_cod", *COLUMNAS_SUCURSAL.keys()]].rename(columns=COLUMNAS_SUCURSAL)
+
+
+def completar_sucursal(df, df_sucursales):
+    """Agrega nombre, ciudad y dirección de la sucursal según suc_ingreso_trn."""
+    df = df.copy()
+    df["_cod"] = pd.to_numeric(df[COLUMNA_SUCURSAL], errors="coerce")
+    df = df.merge(df_sucursales, on="_cod", how="left")  # left conserva el orden de las filas
+    return df.drop(columns="_cod")
 
 
 # Estilo visual
@@ -269,6 +298,17 @@ def procesar_datos(rub, estructura):
                         ignore_index=True,
                     )
                     resultados[CATEGORIA_CONSIGNACIONES] = df_consig[~es_917]
+
+        # Completar nombre, ciudad y dirección de la sucursal desde CAJEROS.xlsx
+        if COLUMNA_SUCURSAL in df_unificado.columns:
+            df_sucursales = None
+            for categoria in CATEGORIAS_CON_SUCURSAL:
+                df_cat = resultados.get(categoria)
+                if df_cat is None or df_cat.empty:
+                    continue
+                if df_sucursales is None:
+                    df_sucursales = cargar_sucursales()
+                resultados[categoria] = completar_sucursal(df_cat, df_sucursales)
 
         # Guardar archivos
         for categoria, df_filtrado in resultados.items():
