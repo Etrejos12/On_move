@@ -32,6 +32,12 @@ COLOR_TEXTO_SECUNDARIO = "#555555"
 COLOR_BORDE = "#D0D0D0"
 COLOR_HOVER_SECUNDARIO = "#F2F2F2"
 
+# Regla: consignaciones de la sucursal 917 se reportan como corresponsal bancario
+COLUMNA_SUCURSAL = "suc_ingreso_trn"
+SUCURSAL_CORRESPONSAL = 917
+CATEGORIA_CONSIGNACIONES = "CONSIGNACIONES SUCURSAL"
+CATEGORIA_CORRESPONSAL = "CORRESPONSAL"
+
 FUENTE = ("Segoe UI", 10)
 FUENTE_NEGRITA = ("Segoe UI", 10, "bold")
 FUENTE_TITULO = ("Segoe UI", 12, "bold")
@@ -231,7 +237,8 @@ def procesar_datos(rub, estructura):
         # Limpiar espacios en la columna
         df_unificado[columna_filtrado] = df_unificado[columna_filtrado].astype(str).str.strip()
 
-        # Filtrar y guardar archivos
+        # Filtrar por categoría (primero se arma todo en memoria y luego se guarda)
+        resultados = {}
         for categoria, conceptos in CONCEPTOS.items():
             if isinstance(conceptos, dict):
                 # Si es diccionario, obtenemos la lista de conceptos
@@ -247,8 +254,24 @@ def procesar_datos(rub, estructura):
             elif not isinstance(conceptos, list):
                 conceptos = [conceptos]
 
-            df_filtrado = df_unificado[df_unificado[columna_filtrado].isin(conceptos)]
+            resultados[categoria] = df_unificado[df_unificado[columna_filtrado].isin(conceptos)]
 
+        # Las consignaciones de sucursal 917 pertenecen a corresponsal bancario:
+        # se sacan de CONSIGNACIONES SUCURSAL y se agregan a CORRESPONSAL.
+        if COLUMNA_SUCURSAL in df_unificado.columns:
+            df_consig = resultados.get(CATEGORIA_CONSIGNACIONES)
+            if df_consig is not None and not df_consig.empty:
+                # to_numeric tolera "917", 917, 917.0 y "0917"
+                es_917 = pd.to_numeric(df_consig[COLUMNA_SUCURSAL], errors="coerce") == SUCURSAL_CORRESPONSAL
+                if es_917.any():
+                    resultados[CATEGORIA_CORRESPONSAL] = pd.concat(
+                        [resultados[CATEGORIA_CORRESPONSAL], df_consig[es_917]],
+                        ignore_index=True,
+                    )
+                    resultados[CATEGORIA_CONSIGNACIONES] = df_consig[~es_917]
+
+        # Guardar archivos
+        for categoria, df_filtrado in resultados.items():
             if not df_filtrado.empty:
                 archivo_salida = os.path.join(directorio_salida, f"{categoria}_{rub}.xlsx")
                 df_filtrado.to_excel(archivo_salida, index=False)
